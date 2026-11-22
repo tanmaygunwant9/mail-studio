@@ -23,6 +23,7 @@ const sessions = new Map();
 const attempts = new Map();
 const workspaces = new Map();
 const dataDir = process.env.DATA_DIR || path.join(ROOT, 'data');
+const storageErrors = new Set(['EROFS', 'EACCES', 'EPERM', 'ENOSPC', 'ENOTDIR', 'EEXIST', 'EISDIR']);
 function workspace(identity) {
   const key = identity ? createHash('sha256').update(identity.uid).digest('hex') : 'local';
   if (!workspaces.has(key)) {
@@ -151,7 +152,13 @@ const server = http.createServer(async (req, res) => {
       default: return json(res, 404, { error: 'Not found.' });
     }
     json(res, 200, { ok: true });
-  } catch (error) { json(res, 400, { error: error.message || 'Request failed.' }); }
+  } catch (error) {
+    if (storageErrors.has(error.code)) {
+      console.error(`Workspace storage unavailable (${error.code}).`);
+      return json(res, 503, { code: 'WORKSPACE_STORAGE_UNAVAILABLE', error: 'Workspace storage is unavailable. Drafts and sending require a server with writable, persistent storage.' });
+    }
+    json(res, 400, { error: error.message || 'Request failed.' });
+  }
 });
 server.requestTimeout = 30000;
 server.on('error', error => { console.error(error.code === 'EADDRINUSE' ? 'Mail Studio is already running, or port 3000 is in use.' : 'Could not start Mail Studio.'); process.exit(1); });

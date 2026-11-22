@@ -6,11 +6,12 @@ const fields = ['sender', 'subject', 'message', 'recipients'];
 function toast(text, error = false) { clearTimeout(toastTimer); $('toast').textContent = text; $('toast').classList.toggle('error', error); $('toast').hidden = false; toastTimer = setTimeout(() => $('toast').hidden = true, error ? 9000 : 4000); }
 async function api(url, data) {
   const response = await fetch(url, data === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(data) });
-  const result = await response.json();
+  const result = await response.json().catch(() => null);
   if (!response.ok) {
     if (response.status === 401 && url !== '/api/login' && !$('loginDialog').open) openLogin();
-    throw new Error(result.error || 'Request failed.');
+    throw Object.assign(new Error(result?.error || `Request failed (HTTP ${response.status}).`), { status: response.status, code: result?.code });
   }
+  if (!result) throw Object.assign(new Error('The server returned an invalid response.'), { status: response.status });
   return result;
 }
 function draft() { return Object.fromEntries([...fields.map(key => [key, $(key).value]), ['rows', rows], ['csvName', csvName], ['attachment', attachment]]); }
@@ -26,9 +27,10 @@ function updateEditor() {
 }
 function markDirty() { dirty = true; updateEditor(); }
 function renderState() {
+  document.querySelectorAll('.draft-field').forEach(el => el.disabled = !!state?.locked || working || !online);
+  for (const id of ['connectGoogle', 'start', 'saveDraft', 'newCampaign', 'preview']) $(id).disabled = !online || working;
   if (!state) return;
   const active = ['running', 'sending', 'pausing'].includes(state.status);
-  document.querySelectorAll('.draft-field').forEach(el => el.disabled = state.locked || working || !online);
   const google = state.google || {};
   $('connectGoogle').disabled = !online || active || working || !google.configured;
   $('connectGoogle').textContent = google.email ? 'Reconnect Gmail' : 'Connect Gmail';
@@ -84,12 +86,22 @@ async function refresh(full = false) {
     const next = await api(`/api/state${full ? '?draft=1' : ''}`);
     if (state && next.id !== state.id && !full) { loadingState = false; return refresh(true); }
     state = next; csrf = next.csrf; timeOffset = next.serverTime - Date.now(); online = true;
+    $('connectionError').hidden = true;
     $('connection').textContent = 'Server connected'; $('connection').classList.add('online');
     if (next.draft) loadDraft(next.draft);
     if ($('loginDialog').open) $('loginDialog').close();
     renderState();
     if (next.googleNotice && next.googleNotice !== googleNotice) { googleNotice = next.googleNotice; toast(next.googleNotice); }
-  } catch { online = false; $('connection').textContent = 'Server disconnected'; $('connection').classList.remove('online'); renderState(); }
+  } catch (error) {
+    online = false;
+    $('connection').classList.remove('online');
+    $('connection').textContent = error.status === 401 ? 'Sign in required'
+      : error.code === 'WORKSPACE_STORAGE_UNAVAILABLE' ? 'Workspace storage unavailable'
+      : error.status ? 'Workspace unavailable' : 'Server unreachable';
+    $('connectionError').hidden = error.status === 401;
+    $('connectionError').textContent = error.status ? error.message : 'Could not reach Mail Studio. The page will retry automatically.';
+    renderState();
+  }
   finally { loadingState = false; }
 }
 async function action(work) {
@@ -191,4 +203,5 @@ $('signOut').onclick = () => action(async () => {
 $('loginDialog').addEventListener('cancel', e => e.preventDefault());
 $('loginForm').onsubmit = async event => { event.preventDefault(); try { await api('/api/login', { password: $('loginPassword').value }); $('loginPassword').value = ''; $('loginDialog').close(); await refresh(true); } catch (error) { $('loginError').textContent = error.message; } };
 window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
+renderState();
 await refresh(true); setInterval(() => { if (!$('loginDialog').open) refresh(); }, 2000); setInterval(updateCountdown, 1000);

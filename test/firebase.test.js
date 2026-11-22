@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
@@ -78,4 +79,14 @@ test('Firebase sessions isolate persisted campaign drafts and require a verified
   assert.equal((await getState(alice.Cookie)).status, 401);
   const aliceAgain = await login('alice');
   assert.equal((await (await getState(aliceAgain.Cookie)).json()).draft.subject, 'Alice private draft');
+
+  const blockedWorkspace = createHash('sha256').update('blocked').digest('hex');
+  fs.writeFileSync(path.join(directory, 'users', blockedWorkspace), 'file where a directory is expected');
+  const blockedLogin = await post('login', { idToken: token('blocked') });
+  assert.equal(blockedLogin.status, 200);
+  const blockedState = await getState(blockedLogin.headers.get('set-cookie').split(';')[0]);
+  assert.equal(blockedState.status, 503);
+  const storageError = await blockedState.json();
+  assert.equal(storageError.code, 'WORKSPACE_STORAGE_UNAVAILABLE');
+  assert.ok(!storageError.error.includes(directory));
 });
