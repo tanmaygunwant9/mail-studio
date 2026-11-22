@@ -4,7 +4,7 @@ A complete browser UI with a JavaScript/Node.js backend. No Python, frontend fra
 
 ## Open it on Windows
 
-1. Install Node.js **22 or newer** from https://nodejs.org if it is not already installed.
+1. Install Node.js **22.x** from https://nodejs.org if it is not already installed. This matches the version used for deployment.
 2. Extract the ZIP into a writable folder. Keep all files together.
 3. Double-click **Start Mail Studio.vbs**. It starts the Node server invisibly and opens http://localhost:3000 in your default browser.
 4. If dependencies are missing, double-click **Install dependencies.cmd** once, then use the launcher.
