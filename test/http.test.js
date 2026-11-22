@@ -13,7 +13,7 @@ test('HTTP session, CSRF, draft persistence, CSV and preview work without SMTP',
   const reservation = net.createServer(); reservation.listen(0, '127.0.0.1'); await once(reservation, 'listening');
   const port = reservation.address().port; await new Promise(resolve => reservation.close(resolve));
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mail-studio-http-'));
-  const proc = spawn(process.execPath, ['server.js'], { cwd: fileURLToPath(new URL('..', import.meta.url)), env: { ...process.env, HOST: '127.0.0.1', PORT: String(port), PUBLIC_ORIGIN: `http://127.0.0.1:${port}`, ADMIN_PASSWORD: '', GOOGLE_CLIENT_ID: 'test-client', GOOGLE_CLIENT_SECRET: 'test-secret', DATA_DIR: directory }, windowsHide: true });
+  const proc = spawn(process.execPath, ['server.js'], { cwd: fileURLToPath(new URL('..', import.meta.url)), env: { ...process.env, HOST: '127.0.0.1', PORT: String(port), PUBLIC_ORIGIN: `http://127.0.0.1:${port}`, ADMIN_PASSWORD: '', MAIL_STUDIO_LOCAL_OWNER: '1', GOOGLE_CLIENT_ID: 'test-client', GOOGLE_CLIENT_SECRET: 'test-secret', DATA_DIR: directory }, windowsHide: true });
   t.after(async () => { if (proc.exitCode === null) { proc.kill(); await once(proc, 'exit'); } fs.rmSync(directory, { recursive: true, force: true }); });
   await new Promise((resolve, reject) => { const timer = setTimeout(() => reject(new Error('Server startup timed out')), 10000); proc.stdout.on('data', data => { if (data.toString().includes('ready:')) { clearTimeout(timer); resolve(); } }); proc.once('error', reject); });
   const origin = `http://127.0.0.1:${port}`;

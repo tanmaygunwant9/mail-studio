@@ -18,7 +18,7 @@
     <div class="sidebar-bottom"><span class="avatar">TG</span><div><strong>Your personal workspace</strong><span>Your Gmail sending desk</span></div></div>
   </aside>
   <main>
-    <header class="topbar"><span>Workspace <span class="slash">/</span> <strong id="breadcrumb">Compose</strong></span><div class="button-row"><span id="connection" class="connection">Connecting…</span><button id="stopServer" class="text-button" hidden>Stop server</button></div></header>
+    <header class="topbar"><span>Workspace <span class="slash">/</span> <strong id="breadcrumb">Compose</strong></span><div class="button-row"><span id="connection" class="connection">Connecting…</span><button id="signOut" class="text-button" hidden>Sign out</button><button id="stopServer" class="text-button" hidden>Stop server</button></div></header>
     <div class="page">
       <div class="heading"><div><p class="eyebrow">YOUR PERSONAL SENDING DESK</p><h1>A good message goes a long way.</h1><p class="subtitle">Write it once. Make it personal. Let us take care of the timing.</p></div><button id="newCampaign" class="button secondary">＋ New campaign</button></div>
       <section class="campaign-strip" aria-label="Campaign overview"><div><span id="statusBadge" class="badge">Draft</span><span id="statusText">Make something worth opening.</span></div><div class="strip-meta"><span><strong id="totalCount">0</strong> recipients</span><span class="divider"></span><span>10 min interval</span></div></section>
@@ -42,12 +42,19 @@
       </div>
       <section id="activityView" class="card" hidden><div class="card-heading"><h2>Sending activity</h2><span id="sentCount" class="muted">0 accepted by Gmail</span></div><div class="activity-body"><div class="progress-track"><div id="progressFill"></div></div><p id="queueSummary" class="subtitle">Your campaign activity will appear here.</p><div class="table-wrap"><table><thead><tr><th>Recipient</th><th>Status</th><th>Time</th></tr></thead><tbody id="activityRows"></tbody></table></div><div id="emptyActivity" class="empty-state"><span aria-hidden="true">✉</span><h3>A fresh start.</h3><p>Sent emails appear here as your queue moves along.</p></div></div></section>
       <div class="bottom-actions"><div class="delivery-note"><span class="clock-outline" aria-hidden="true">◷</span><div><strong id="scheduleTitle">A thoughtful pace, automatically.</strong><span id="scheduleNote">First email sends now, then one every 10 minutes.</span></div></div><div class="button-row"><button class="button ghost" id="saveDraft">Save draft</button><button class="button secondary" id="preview">Preview email</button><button class="button secondary" id="pause" hidden>Pause sending</button><button class="button primary" id="start">Start sending <span aria-hidden="true">▷</span></button></div></div>
-      <p class="footer-note">The queue runs on your server. For local use, keep your computer awake and the server running.</p>
+      <p class="footer-note">The queue runs on your server. For local use, keep your computer awake and the server running. <a href="/privacy">Privacy Policy</a></p>
     </div>
   </main>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
   <dialog id="previewDialog"><div class="dialog-top"><div><p class="eyebrow">A LAST LOOK</p><h2>Your email, as they’ll see it.</h2></div><button class="icon-button" id="closePreview" aria-label="Close preview">×</button></div><label for="previewRecipient">Preview recipient</label><select id="previewRecipient"></select><div class="email-preview"><div class="email-meta"><span>From</span><strong id="previewFrom"></strong><span>To</span><strong id="previewTo"></strong></div><h3 id="previewSubject"></h3><pre id="previewBody"></pre><p class="preview-attachment" id="previewAttachment" hidden></p></div></dialog>
   <dialog id="newDialog"><div class="dialog-top"><h2>A fresh campaign?</h2></div><p>Your message and recipients stay in the editor. Sending progress resets, so these recipients can receive your email again.</p><div class="button-row dialog-actions"><button id="cancelNew" class="button secondary">Keep this campaign</button><button id="confirmNew" class="button primary">Create new campaign</button></div></dialog>
-  <dialog id="loginDialog"><p class="eyebrow">MAIL STUDIO</p><h2>Your workspace, privately.</h2><p>Enter the app access password set by your server administrator.</p><form id="loginForm"><label for="loginPassword">App access password</label><input id="loginPassword" type="password" autocomplete="current-password" required><p id="loginError" role="alert"></p><button class="button primary" type="submit">Open workspace</button></form></dialog>
+  <dialog id="loginDialog">
+    <h2>Sign in to Mail Studio</h2>
+    <p>Write and personalize emails, then send them from your Gmail account.</p>
+    <p><a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a></p>
+    <button id="firebaseLogin" class="button primary" type="button" hidden>Sign in with Google</button>
+    <form id="loginForm" hidden><label for="loginPassword">App access password</label><input id="loginPassword" type="password" autocomplete="current-password" required><button class="button primary" type="submit">Open workspace</button></form>
+    <p id="loginError" role="status"></p>
+  </dialog>
 </body>
 </html>

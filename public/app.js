@@ -1,12 +1,16 @@
 const $ = id => document.getElementById(id);
 let csrf = '', state = null, dirty = false, rows = [], csvName = '', attachment = null, previews = [], previewSender = '', previewAttachment = null;
+let firebaseLogin;
 let online = false, working = false, toastTimer, loadingState = false;
 const fields = ['sender', 'subject', 'message', 'recipients'];
 function toast(text, error = false) { clearTimeout(toastTimer); $('toast').textContent = text; $('toast').classList.toggle('error', error); $('toast').hidden = false; toastTimer = setTimeout(() => $('toast').hidden = true, error ? 9000 : 4000); }
 async function api(url, data) {
   const response = await fetch(url, data === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(data) });
   const result = await response.json();
-  if (!response.ok) { if (response.status === 401 && !$('loginDialog').open) $('loginDialog').showModal(); throw new Error(result.error || 'Request failed.'); }
+  if (!response.ok) {
+    if (response.status === 401 && url !== '/api/login' && !$('loginDialog').open) openLogin();
+    throw new Error(result.error || 'Request failed.');
+  }
   return result;
 }
 function draft() { return Object.fromEntries([...fields.map(key => [key, $(key).value]), ['rows', rows], ['csvName', csvName], ['attachment', attachment]]); }
@@ -27,11 +31,13 @@ function renderState() {
   document.querySelectorAll('.draft-field').forEach(el => el.disabled = state.locked || working || !online);
   const google = state.google || {};
   $('connectGoogle').disabled = !online || active || working || !google.configured;
-  $('connectGoogle').textContent = google.email ? 'Reconnect with Google' : 'Sign in with Google';
+  $('connectGoogle').textContent = google.email ? 'Reconnect Gmail' : 'Connect Gmail';
   $('disconnectGoogle').hidden = !google.email;
   $('disconnectGoogle').disabled = active || working;
   $('googleStatus').textContent = google.email ? `Connected as ${google.email}` : google.configured ? 'Sign in and allow email sending to connect.' : 'Google setup required: add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to .env (see README.md), then restart.';
-  if (!state.locked && google.email) $('sender').value = google.email;
+  if (!state.locked && (google.email || state.identity)) $('sender').value = google.email || state.identity;
+  $('signOut').hidden = !state.identity;
+  $('signOut').disabled = !online || working;
   $('start').disabled = !online || working || !state.google?.email || active || !!state.pending || state.status === 'complete';
   $('start').textContent = state.locked ? (state.status === 'complete' ? 'Campaign complete' : 'Resume sending') : 'Start sending ▷';
   $('pause').hidden = !active; $('pause').disabled = working || state.status === 'pausing';
@@ -80,6 +86,7 @@ async function refresh(full = false) {
     state = next; csrf = next.csrf; timeOffset = next.serverTime - Date.now(); online = true;
     $('connection').textContent = 'Server connected'; $('connection').classList.add('online');
     if (next.draft) loadDraft(next.draft);
+    if ($('loginDialog').open) $('loginDialog').close();
     renderState();
     if (next.googleNotice && next.googleNotice !== googleNotice) { googleNotice = next.googleNotice; toast(next.googleNotice); }
   } catch { online = false; $('connection').textContent = 'Server disconnected'; $('connection').classList.remove('online'); renderState(); }
@@ -117,7 +124,7 @@ $('pdfFile').onchange = event => action(async () => {
 });
 $('removePdf').onclick = () => { attachment = null; $('pdfFile').value = ''; markDirty(); };
 $('start').onclick = () => action(async () => {
-  if (!state.google?.email) throw new Error('Sign in with Google in Sending account first.');
+  if (!state.google?.email) throw new Error('Connect Gmail in Sending account first.');
   if (!state.locked) await saveDraft();
   await api('/api/start', {}); toast('Queue started. Your first email will send when due.');
 });
@@ -137,6 +144,50 @@ $('previewRecipient').onchange = showPreview;
 $('closePreview').onclick = () => $('previewDialog').close();
 function tab(activity) { $('composeView').hidden = activity; $('activityView').hidden = !activity; $('composeNav').classList.toggle('active', !activity); $('activityNav').classList.toggle('active', activity); $('breadcrumb').textContent = activity ? 'Sending activity' : 'Compose'; for (const id of ['composeNav', 'activityNav']) $(id).removeAttribute('aria-current'); $(activity ? 'activityNav' : 'composeNav').setAttribute('aria-current', 'page'); }
 $('composeNav').onclick = () => tab(false); $('activityNav').onclick = () => tab(true);
+async function openLogin() {
+  $('loginDialog').showModal();
+  $('loginError').textContent = 'Loading sign-in…';
+  try {
+    const { firebase } = await api('/api/auth/config');
+    if (!firebase) {
+      $('loginForm').hidden = false;
+    } else if (!firebaseLogin) {
+      const [{ initializeApp }, { getAuth, GoogleAuthProvider, signInWithPopup, signOut }] = await Promise.all([
+        import('https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js'),
+        import('https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js')
+      ]);
+      const auth = getAuth(initializeApp(firebase));
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      firebaseLogin = async () => {
+        const { user } = await signInWithPopup(auth, provider);
+        try { await api('/api/login', { idToken: await user.getIdToken() }); }
+        finally { await signOut(auth); }
+      };
+    }
+    $('firebaseLogin').hidden = !firebase;
+    $('loginError').textContent = '';
+  } catch {
+    $('loginError').textContent = 'Could not load Google sign-in. Reload the page to try again.';
+  }
+}
+$('firebaseLogin').onclick = async () => {
+  $('firebaseLogin').disabled = true;
+  $('loginError').textContent = '';
+  try {
+    await firebaseLogin();
+    await refresh(true);
+  } catch (error) {
+    $('loginError').textContent = error.code === 'auth/unauthorized-domain'
+      ? 'This website must be added to Firebase Authentication’s authorized domains.'
+      : error.message;
+  } finally { $('firebaseLogin').disabled = false; }
+};
+$('signOut').onclick = () => action(async () => {
+  if (dirty && !state.locked) await saveDraft();
+  await api('/api/logout', {});
+  window.location.reload();
+});
 $('loginDialog').addEventListener('cancel', e => e.preventDefault());
 $('loginForm').onsubmit = async event => { event.preventDefault(); try { await api('/api/login', { password: $('loginPassword').value }); $('loginPassword').value = ''; $('loginDialog').close(); await refresh(true); } catch (error) { $('loginError').textContent = error.message; } };
 window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
