@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mail Studio — Your personal sending desk</title>
+  <meta name="description" content="Compose, personalize, and send emails at a thoughtful pace. Your personal email workspace.">
+  <link rel="icon" href="/icon.svg"><link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="Mail Studio home"><img src="/icon.svg" alt=""> <span>Mail<span class="brand-light">Studio</span></span></a>
+    <p class="nav-label">YOUR WORKSPACE</p>
+    <nav aria-label="Main navigation">
+      <button class="nav active" id="composeNav" aria-current="page"><span aria-hidden="true">✎</span> Compose</button>
+      <button class="nav" id="activityNav"><span aria-hidden="true">◷</span> Sending activity <span class="nav-count" id="activityCount">0</span></button>
+    </nav>
+    <div class="sidebar-note"><div class="pace-icon" aria-hidden="true">◷</div><strong>A little breathing room.</strong><p>One personal email.<br>Every ten minutes.<br>All handled for you.</p><span class="pace-label">STEADY BY DESIGN</span></div>
+    <div class="sidebar-bottom"><span class="avatar">TG</span><div><strong>Your personal workspace</strong><span>Your Gmail sending desk</span></div></div>
+  </aside>
+  <main>
+    <header class="topbar"><span>Workspace <span class="slash">/</span> <strong id="breadcrumb">Compose</strong></span><div class="button-row"><span id="connection" class="connection">Connecting…</span><button id="stopServer" class="text-button" hidden>Stop server</button></div></header>
+    <div class="page">
+      <div class="heading"><div><p class="eyebrow">YOUR PERSONAL SENDING DESK</p><h1>A good message goes a long way.</h1><p class="subtitle">Write it once. Make it personal. Let us take care of the timing.</p></div><button id="newCampaign" class="button secondary">＋ New campaign</button></div>
+      <section class="campaign-strip" aria-label="Campaign overview"><div><span id="statusBadge" class="badge">Draft</span><span id="statusText">Make something worth opening.</span></div><div class="strip-meta"><span><strong id="totalCount">0</strong> recipients</span><span class="divider"></span><span>10 min interval</span></div></section>
+      <section id="uncertain" class="notice warning" hidden><strong>One email needs your attention</strong><p id="uncertainText"></p><div class="button-row"><button class="button secondary" id="markSent">It was sent · skip recipient</button><button class="button secondary" id="markNotSent">It was not sent · allow retry</button></div></section>
+      <section id="errorPanel" class="notice warning" hidden></section>
+      <div id="composeView" class="workspace-grid">
+        <section class="card composer">
+          <div class="card-heading"><div class="card-title"><span class="small-icon" aria-hidden="true">✎</span><h2>The message</h2></div><span class="muted" id="draftLabel">Not saved yet</span></div>
+          <div class="card-body">
+            <label for="subject">Subject line</label><input id="subject" class="draft-field subject-input" maxlength="500" placeholder="Give them a reason to open it…" autocomplete="off">
+            <div class="label-row"><label for="message">Your message</label><button id="insertName" class="text-button draft-field" title="Requires a name column in your CSV">＋ Personalize</button></div>
+            <div class="editor"><div class="editor-toolbar"><span>Plain text</span><span class="editor-hint">Simple. Personal. Readable.</span></div><textarea id="message" class="draft-field" placeholder="Hi there,&#10;&#10;Write your email here. Every recipient will receive their own copy.&#10;&#10;Best,&#10;Tanmay" spellcheck="true"></textarea><div class="editor-bottom"><span>Use {{name}} with a CSV name column</span><span id="charCount">0 characters</span></div></div>
+            <div class="attachment-area"><div class="attachment-symbol" aria-hidden="true">⌁</div><div class="attachment-copy"><strong id="pdfName">Add a little more context</strong><span id="pdfHint">Attach a PDF · up to 10 MB · optional</span></div><label for="pdfFile" class="button secondary file-button" id="pdfPick">Choose PDF</label><input id="pdfFile" class="sr-only draft-field" type="file" accept="application/pdf,.pdf"><button id="removePdf" class="icon-button draft-field" aria-label="Remove PDF" hidden>×</button></div>
+          </div>
+          <div class="composer-footer"><span class="privacy-icon" aria-hidden="true">◇</span><span>Sent individually. Your recipients never see each other.</span></div>
+        </section>
+        <div class="right-column">
+          <section class="card audience"><div class="card-heading"><div class="card-title"><span class="small-icon" aria-hidden="true">◎</span><h2>The audience</h2></div><span class="count-pill" id="recipientCount">0</span></div><div class="card-body"><label for="recipients">Who is this for?</label><textarea id="recipients" class="draft-field" rows="3" placeholder="alex@example.com&#10;sam@example.com" spellcheck="false"></textarea><p class="field-hint">Separate addresses with commas or new lines.</p><div class="or"><span>or bring your list</span></div><label for="csvFile" class="csv-drop" id="csvPick"><span class="file-icon" aria-hidden="true">▤</span><strong>Import a CSV</strong><span>Include a column named “email”</span></label><input id="csvFile" class="sr-only draft-field" type="file" accept=".csv,text/csv"><div id="csvSummary" class="file-summary" hidden><span id="csvName"></span><button id="removeCsv" class="icon-button draft-field" aria-label="Remove CSV">×</button></div><p class="field-hint dedup">Duplicate addresses are automatically removed.</p></div></section>
+          <section class="card account"><div class="card-heading"><div class="card-title"><span class="small-icon" aria-hidden="true">✉</span><h2>Sending account</h2></div><span class="provider">Gmail</span></div><div class="card-body"><label for="sender">From email</label><input id="sender" type="email" readonly placeholder="Connect your Google account"><p id="googleStatus" class="field-hint" role="status">Checking Google connection…</p><button type="button" id="connectGoogle" class="button secondary">Sign in with Google</button><button type="button" id="disconnectGoogle" class="text-button" hidden>Disconnect</button><p class="field-hint">Allow Mail Studio to send email on your behalf. No app password needed.</p></div></section>
+        </div>
+      </div>
+      <section id="activityView" class="card" hidden><div class="card-heading"><h2>Sending activity</h2><span id="sentCount" class="muted">0 accepted by Gmail</span></div><div class="activity-body"><div class="progress-track"><div id="progressFill"></div></div><p id="queueSummary" class="subtitle">Your campaign activity will appear here.</p><div class="table-wrap"><table><thead><tr><th>Recipient</th><th>Status</th><th>Time</th></tr></thead><tbody id="activityRows"></tbody></table></div><div id="emptyActivity" class="empty-state"><span aria-hidden="true">✉</span><h3>A fresh start.</h3><p>Sent emails appear here as your queue moves along.</p></div></div></section>
+      <div class="bottom-actions"><div class="delivery-note"><span class="clock-outline" aria-hidden="true">◷</span><div><strong id="scheduleTitle">A thoughtful pace, automatically.</strong><span id="scheduleNote">First email sends now, then one every 10 minutes.</span></div></div><div class="button-row"><button class="button ghost" id="saveDraft">Save draft</button><button class="button secondary" id="preview">Preview email</button><button class="button secondary" id="pause" hidden>Pause sending</button><button class="button primary" id="start">Start sending <span aria-hidden="true">▷</span></button></div></div>
+      <p class="footer-note">The queue runs on your server. For local use, keep your computer awake and the server running.</p>
+    </div>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="previewDialog"><div class="dialog-top"><div><p class="eyebrow">A LAST LOOK</p><h2>Your email, as they’ll see it.</h2></div><button class="icon-button" id="closePreview" aria-label="Close preview">×</button></div><label for="previewRecipient">Preview recipient</label><select id="previewRecipient"></select><div class="email-preview"><div class="email-meta"><span>From</span><strong id="previewFrom"></strong><span>To</span><strong id="previewTo"></strong></div><h3 id="previewSubject"></h3><pre id="previewBody"></pre><p class="preview-attachment" id="previewAttachment" hidden></p></div></dialog>
+  <dialog id="newDialog"><div class="dialog-top"><h2>A fresh campaign?</h2></div><p>Your message and recipients stay in the editor. Sending progress resets, so these recipients can receive your email again.</p><div class="button-row dialog-actions"><button id="cancelNew" class="button secondary">Keep this campaign</button><button id="confirmNew" class="button primary">Create new campaign</button></div></dialog>
+  <dialog id="loginDialog"><p class="eyebrow">MAIL STUDIO</p><h2>Your workspace, privately.</h2><p>Enter the app access password set by your server administrator.</p><form id="loginForm"><label for="loginPassword">App access password</label><input id="loginPassword" type="password" autocomplete="current-password" required><p id="loginError" role="alert"></p><button class="button primary" type="submit">Open workspace</button></form></dialog>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "mail-studio-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A personal, browser-based Gmail sender with a durable ten-minute queue",
+  "scripts": { "start": "node --env-file-if-exists=.env server.js", "test": "node --test", "check": "node --check server.js && node --check lib/google.js && node --check lib/campaign.js && node --check public/app.js" },
+  "engines": { "node": ">=22" },
+  "dependencies": { "csv-parse": "7.0.3", "nodemailer": "10.6.1" }
+}
